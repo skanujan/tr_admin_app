@@ -3,7 +3,7 @@ package com.trelegantboutique.admin.data
 import com.google.gson.annotations.SerializedName
 
 /**
- * Plain data shapes returned by the PHP API (api/*.php on the live site).
+ * Plain data shapes returned by the PHP API (the api folder on the live site).
  * Field names and nullability here were checked against live-tested responses
  * from each endpoint, not guessed from the PHP source alone.
  */

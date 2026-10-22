@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.trelegantboutique.admin.data.OrderSummary
 import com.trelegantboutique.admin.ui.theme.DeepGreen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdersListScreen(
     viewModel: OrdersListViewModel,

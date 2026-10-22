@@ -14,6 +14,7 @@ import coil.compose.AsyncImage
 import com.trelegantboutique.admin.data.ProductSummary
 import com.trelegantboutique.admin.ui.theme.DeepGreen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductsListScreen(
     viewModel: ProductsListViewModel,
