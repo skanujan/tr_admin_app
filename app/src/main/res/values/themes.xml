@@ -1,0 +1,9 @@
+<resources>
+    <!-- The actual app colors/typography live in ui/theme/Theme.kt (Compose) -
+         this is only the pre-Compose splash/launch theme Android needs before
+         the first Compose frame draws. -->
+    <style name="Theme.TrAdmin" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#1B4D3E</item>
+        <item name="android:windowBackground">#F7F1E6</item>
+    </style>
+</resources>

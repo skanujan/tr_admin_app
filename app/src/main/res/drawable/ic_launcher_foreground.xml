@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simple gold "TR" monogram placeholder, in the adaptive icon's safe zone
+     (the outer ~1/3 is cropped by the OS mask on different launchers), so this
+     is deliberately plain and centred. Swap this file for your real mark
+     whenever you have one - nothing else needs to change. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M30,38 H52 V46 H45 V72 H37 V46 H30 Z" />
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M58,38 H74 C79,38 82,41 82,46 C82,50 80,52.5 77,53.6 L83,72 H75 L70,55 H66 V72 H58 Z M66,46 V48 H73 C74.5,48 75,47.3 75,46 C75,44.7 74.5,44 73,44 H66 Z" />
+</vector>
