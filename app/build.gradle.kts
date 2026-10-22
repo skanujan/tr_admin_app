@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -34,7 +36,7 @@ android {
             // These four values come from the keystore.properties file that sits
             // next to this build.gradle.kts (see README.md for how it is created
             // in GitHub Actions from repository secrets - it is never committed).
-            val props = java.util.Properties()
+            val props = Properties()
             val f = rootProject.file("keystore.properties")
             if (f.exists()) {
                 props.load(f.inputStream())
