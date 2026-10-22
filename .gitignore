@@ -1,0 +1,17 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+
+# Secrets - these must never be committed. The real copies live only on your
+# own computer and as GitHub Actions secrets (see README.md).
+keystore.properties
+*.keystore
+*.jks
+app/google-services.json
