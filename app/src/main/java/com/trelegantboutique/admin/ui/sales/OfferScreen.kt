@@ -18,7 +18,7 @@ import com.trelegantboutique.admin.ui.common.*
 
 /** The site-wide Deepawali style offer: on/off, percent, code, label, end date. */
 @Composable
-fun OfferScreen(viewModel: JsonLoaderViewModel, onBack: () -> Unit, onSessionExpired: () -> Unit) {
+fun OfferScreen(viewModel: JsonLoaderViewModel, onBack: (() -> Unit)?, onSessionExpired: () -> Unit) {
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     HandleState(state, snackbar, viewModel, onSessionExpired)

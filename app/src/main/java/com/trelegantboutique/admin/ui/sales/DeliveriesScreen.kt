@@ -27,7 +27,7 @@ private val FILTERS = listOf("all" to "All", "dispatch" to "To dispatch", "deliv
 @Composable
 fun DeliveriesScreen(
     viewModel: JsonLoaderViewModel,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onOpenOrder: (Int) -> Unit,
     onOpenCourier: (Int) -> Unit,
     onSessionExpired: () -> Unit

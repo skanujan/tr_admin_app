@@ -28,7 +28,7 @@ private val PRE_STATUSES = listOf("Pending", "Confirmed", "Shipped", "Delivered"
 fun PreordersScreen(
     viewModel: JsonLoaderViewModel,
     pickerViewModel: JsonLoaderViewModel,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onSessionExpired: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()

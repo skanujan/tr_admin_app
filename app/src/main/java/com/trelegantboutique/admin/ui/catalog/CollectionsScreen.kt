@@ -23,7 +23,7 @@ import com.trelegantboutique.admin.ui.common.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CollectionsScreen(viewModel: JsonLoaderViewModel, onBack: () -> Unit, onSessionExpired: () -> Unit) {
+fun CollectionsScreen(viewModel: JsonLoaderViewModel, onBack: (() -> Unit)?, onSessionExpired: () -> Unit) {
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     HandleState(state, snackbar, viewModel, onSessionExpired)

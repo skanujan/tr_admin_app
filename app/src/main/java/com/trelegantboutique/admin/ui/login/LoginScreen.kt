@@ -15,7 +15,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import com.trelegantboutique.admin.ui.theme.DeepGreen
+import com.trelegantboutique.admin.ui.theme.Gold
+import com.trelegantboutique.admin.ui.theme.Marcellus
+import com.trelegantboutique.admin.ui.theme.MaroonDeep
 
 @Composable
 fun LoginScreen(viewModel: LoginViewModel, onLoggedIn: () -> Unit) {
@@ -26,9 +33,18 @@ fun LoginScreen(viewModel: LoginViewModel, onLoggedIn: () -> Unit) {
         if (state.loggedIn) onLoggedIn()
     }
 
-    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(listOf(MaroonDeep, DeepGreen)))
+            .padding(20.dp),
+        contentAlignment = Alignment.Center
+    ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(16.dp))
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
@@ -38,8 +54,8 @@ fun LoginScreen(viewModel: LoginViewModel, onLoggedIn: () -> Unit) {
                 modifier = Modifier.size(56.dp)
             )
             Spacer(Modifier.height(12.dp))
-            Text("TR Elegant Boutique", style = MaterialTheme.typography.headlineSmall)
-            Text("Admin", style = MaterialTheme.typography.titleMedium, color = DeepGreen)
+            Text("TR Elegant Boutique", style = MaterialTheme.typography.headlineSmall, fontFamily = Marcellus)
+            Text("Admin panel", style = MaterialTheme.typography.titleMedium, color = Gold)
             Spacer(Modifier.height(32.dp))
 
             OutlinedTextField(

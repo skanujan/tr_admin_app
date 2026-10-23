@@ -30,7 +30,7 @@ private val SALE_STATUSES = listOf("Confirmed", "Pending", "Delivered")
 fun NewSaleScreen(
     viewModel: NewSaleViewModel,
     pickerViewModel: JsonLoaderViewModel,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onOpenOrder: (Int) -> Unit,
     onSessionExpired: () -> Unit
 ) {
@@ -197,7 +197,7 @@ fun NewSaleScreen(
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.finishAndReset()
-                    if (orderId > 0) onOpenOrder(orderId) else onBack()
+                    if (orderId > 0) onOpenOrder(orderId) else onBack?.invoke()
                 }) { Text("Open order") }
             },
             dismissButton = {

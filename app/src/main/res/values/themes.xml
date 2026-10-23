@@ -3,7 +3,7 @@
          this is only the pre-Compose splash/launch theme Android needs before
          the first Compose frame draws. -->
     <style name="Theme.TrAdmin" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">#1B4D3E</item>
-        <item name="android:windowBackground">#F7F1E6</item>
+        <item name="android:statusBarColor">#0F2F26</item>
+        <item name="android:windowBackground">#F3ECE0</item>
     </style>
 </resources>

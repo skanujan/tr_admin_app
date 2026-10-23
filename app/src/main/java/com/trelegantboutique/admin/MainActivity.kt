@@ -1,53 +1,41 @@
 package com.trelegantboutique.admin
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
+import android.webkit.CookieManager
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.trelegantboutique.admin.auth.BiometricHelper
-import com.trelegantboutique.admin.data.ApiRepository
-import com.trelegantboutique.admin.data.SessionStore
-import com.trelegantboutique.admin.ui.dashboard.DashboardScreen
-import com.trelegantboutique.admin.ui.dashboard.DashboardViewModel
-import com.trelegantboutique.admin.ui.login.LoginScreen
-import com.trelegantboutique.admin.ui.login.LoginViewModel
-import com.trelegantboutique.admin.ui.login.UnlockScreen
-import com.trelegantboutique.admin.ui.orders.OrderDetailScreen
-import com.trelegantboutique.admin.ui.orders.OrderDetailViewModel
-import com.trelegantboutique.admin.ui.orders.OrdersListScreen
-import com.trelegantboutique.admin.ui.orders.OrdersListViewModel
-import com.trelegantboutique.admin.ui.products.ProductDetailScreen
-import com.trelegantboutique.admin.ui.products.ProductDetailViewModel
-import com.trelegantboutique.admin.ui.products.ProductsListScreen
-import com.trelegantboutique.admin.ui.products.ProductsListViewModel
 import com.trelegantboutique.admin.ui.catalog.CollectionsScreen
 import com.trelegantboutique.admin.ui.catalog.ProductEditScreen
 import com.trelegantboutique.admin.ui.catalog.StockReportScreen
 import com.trelegantboutique.admin.ui.common.JsonLoaderViewModel
-import com.trelegantboutique.admin.ui.more.MoreScreen
+import com.trelegantboutique.admin.ui.common.LocalDrawerIsOpen
+import com.trelegantboutique.admin.ui.common.LocalOpenDrawer
+import com.trelegantboutique.admin.ui.dashboard.DashboardScreen
+import com.trelegantboutique.admin.ui.login.LoginScreen
+import com.trelegantboutique.admin.ui.login.LoginViewModel
+import com.trelegantboutique.admin.ui.login.UnlockScreen
+import com.trelegantboutique.admin.ui.orders.OrderDetailScreen
+import com.trelegantboutique.admin.ui.orders.OrdersListScreen
+import com.trelegantboutique.admin.ui.products.ProductsListScreen
 import com.trelegantboutique.admin.ui.sales.CourierScreen
 import com.trelegantboutique.admin.ui.sales.DeliveriesScreen
 import com.trelegantboutique.admin.ui.sales.NewSaleScreen
@@ -55,33 +43,32 @@ import com.trelegantboutique.admin.ui.sales.NewSaleViewModel
 import com.trelegantboutique.admin.ui.sales.OfferScreen
 import com.trelegantboutique.admin.ui.sales.PreordersScreen
 import com.trelegantboutique.admin.ui.sales.PromoCodesScreen
+import com.trelegantboutique.admin.ui.shell.ActiveItem
+import com.trelegantboutique.admin.ui.shell.AdminDrawerContent
+import com.trelegantboutique.admin.ui.shell.MenuItem
+import com.trelegantboutique.admin.ui.shell.Native
+import com.trelegantboutique.admin.ui.shell.WebPageScreen
 import com.trelegantboutique.admin.ui.theme.TrAdminTheme
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 private object Routes {
     const val LOGIN = "login"
     const val UNLOCK = "unlock"
-    const val DASHBOARD = "dashboard"
-    const val ORDERS = "orders"
-    const val PRODUCTS = "products"
-    const val ORDER_DETAIL = "order_detail/{id}"
-    const val PRODUCT_DETAIL = "product_detail/{id}"
-    const val MORE = "more"
-    const val STOCK = "stock_report"
-    const val COLLECTIONS = "collections"
-    const val NEW_SALE = "new_sale"
-    const val DELIVERIES = "deliveries"
-    const val PREORDERS = "preorders"
-    const val PROMOS = "promo_codes"
-    const val OFFER = "site_offer"
+    const val ORDERS = "orders?status={status}"
+    const val ORDER = "order/{id}"
     const val PRODUCT_EDIT = "product_edit/{id}"
     const val COURIER = "courier/{id}"
+    const val NEW_SALE = "new_sale?back={back}"
+    const val WEB = "web?path={path}&title={title}&back={back}"
+    fun orders(status: String) = if (status.isEmpty()) "orders" else "orders?status=" + Uri.encode(status)
+    fun order(id: Int) = "order/$id"
     fun productEdit(id: Int) = "product_edit/$id"
     fun courier(id: Int) = "courier/$id"
-    fun orderDetail(id: Int) = "order_detail/$id"
-    fun productDetail(id: Int) = "product_detail/$id"
+    fun newSale(back: Boolean) = if (back) "new_sale?back=1" else "new_sale"
+    fun web(path: String, title: String, back: Boolean) =
+        "web?path=" + Uri.encode(path) + "&title=" + Uri.encode(title) + "&back=" + (if (back) "1" else "0")
 }
-
-private val BOTTOM_TABS = listOf(Routes.DASHBOARD, Routes.ORDERS, Routes.PRODUCTS, Routes.MORE)
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -113,262 +100,302 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             TrAdminTheme {
-                Surface {
-                    AdminAppRoot(app.session, app.repository, this)
-                }
+                AdminAppRoot(app, this)
             }
         }
     }
 }
 
 @Composable
-private fun AdminAppRoot(session: SessionStore, repo: ApiRepository, activity: FragmentActivity) {
-    val navController = rememberNavController()
+private fun AdminAppRoot(app: AdminApp, activity: FragmentActivity) {
+    val session = app.session
+    val repo = app.repository
+    val nav = rememberNavController()
     val scope = rememberCoroutineScope()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    var inboxCount by remember { mutableStateOf(0) }
 
     val startDestination = remember {
         when {
             !session.isSignedIn -> Routes.LOGIN
             session.biometricEnabled && BiometricHelper.availability(activity) == BiometricHelper.Availability.AVAILABLE -> Routes.UNLOCK
-            else -> Routes.DASHBOARD
+            else -> Native.DASHBOARD
         }
     }
 
-    val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route
-    val showBottomBar = currentRoute in BOTTOM_TABS
+    val entry by nav.currentBackStackEntryAsState()
+    val route = entry?.destination?.route
+    val signedInArea = route != null && route != Routes.LOGIN && route != Routes.UNLOCK
+    val active = when {
+        route == Routes.WEB -> ActiveItem(null, entry?.arguments?.getString("path"))
+        route == Routes.ORDERS -> ActiveItem(Native.ORDERS, null)
+        route == Routes.NEW_SALE -> ActiveItem(Native.NEW_SALE, null)
+        else -> ActiveItem(route, null)
+    }
+    val baseUrl = session.apiBaseUrl
+    val siteHost = Uri.parse(baseUrl).host ?: ""
+    val siteRoot = baseUrl.trimEnd('/').removeSuffix("/api") + "/"
 
     fun goToSessionExpired() {
-        navController.navigate(Routes.LOGIN) {
-            popUpTo(0) { inclusive = true }
+        scope.launch { drawerState.close() }
+        nav.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
+    }
+
+    /** Opening a menu page: it replaces whatever was open, Back returns to the Dashboard. */
+    fun navigateTop(r: String) {
+        nav.navigate(r) {
+            popUpTo(Native.DASHBOARD) { inclusive = false }
+            launchSingleTop = true
         }
     }
 
-    Scaffold(
-        bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    NavigationBarItem(
-                        selected = currentRoute == Routes.DASHBOARD,
-                        onClick = { navigateToTab(navController, Routes.DASHBOARD) },
-                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
-                        label = { Text("Dashboard") }
+    fun openMenu(item: MenuItem) {
+        scope.launch { drawerState.close() }
+        when {
+            item.external -> try {
+                activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(siteRoot)))
+            } catch (e: Exception) { }
+            item.route == Native.ORDERS -> navigateTop(Routes.orders(""))
+            item.route == Native.NEW_SALE -> navigateTop(Routes.newSale(false))
+            item.route != null -> navigateTop(item.route)
+            item.web != null -> navigateTop(Routes.web(item.web, item.label, false))
+        }
+    }
+
+    fun signOut() {
+        scope.launch {
+            drawerState.close()
+            repo.logout()
+            session.clear()
+            try { CookieManager.getInstance().removeAllCookies(null) } catch (e: Exception) { }
+            nav.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
+        }
+    }
+
+    val perms = if (session.perms.isEmpty()) setOf("*") else session.perms
+
+    // Back closes the side menu first, like any Android app.
+    BackHandler(enabled = drawerState.isOpen) { scope.launch { drawerState.close() } }
+
+    CompositionLocalProvider(
+        LocalOpenDrawer provides { scope.launch { drawerState.open() } },
+        LocalDrawerIsOpen provides drawerState.isOpen
+    ) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            gesturesEnabled = signedInArea,
+            drawerContent = {
+                if (signedInArea) {
+                    AdminDrawerContent(
+                        siteName = "TR Elegant Boutique",
+                        adminName = session.adminName ?: "Admin",
+                        perms = perms,
+                        active = active,
+                        inboxCount = inboxCount,
+                        onOpen = { openMenu(it) },
+                        onSignOut = { signOut() }
                     )
-                    NavigationBarItem(
-                        selected = currentRoute == Routes.ORDERS,
-                        onClick = { navigateToTab(navController, Routes.ORDERS) },
-                        icon = { Icon(Icons.Filled.ReceiptLong, contentDescription = null) },
-                        label = { Text("Orders") }
+                }
+            }
+        ) {
+            NavHost(navController = nav, startDestination = startDestination) {
+                composable(Routes.LOGIN) {
+                    val vm: LoginViewModel = viewModel(factory = viewModelFactory {
+                        initializer { LoginViewModel(repo, session) }
+                    })
+                    LoginScreen(viewModel = vm, onLoggedIn = {
+                        if (BiometricHelper.availability(activity) == BiometricHelper.Availability.AVAILABLE) {
+                            session.biometricEnabled = true
+                        }
+                        nav.navigate(Native.DASHBOARD) { popUpTo(0) { inclusive = true } }
+                    })
+                }
+                composable(Routes.UNLOCK) {
+                    UnlockScreen(
+                        onUnlocked = {
+                            nav.navigate(Native.DASHBOARD) { popUpTo(Routes.UNLOCK) { inclusive = true } }
+                        },
+                        onUsePasswordInstead = {
+                            session.clear()
+                            nav.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
+                        }
                     )
-                    NavigationBarItem(
-                        selected = currentRoute == Routes.PRODUCTS,
-                        onClick = { navigateToTab(navController, Routes.PRODUCTS) },
-                        icon = { Icon(Icons.Filled.Inventory2, contentDescription = null) },
-                        label = { Text("Products") }
+                }
+
+                composable(Native.DASHBOARD) {
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "dashboard-full.php", null, mapOf("range" to "last30")) }
+                    })
+                    DashboardScreen(
+                        viewModel = vm,
+                        onNewSale = { nav.navigate(Routes.newSale(true)) },
+                        onOrders = { st -> navigateTop(Routes.orders(st ?: "")) },
+                        onProducts = { navigateTop(Native.PRODUCTS) },
+                        onOpenOrder = { id -> nav.navigate(Routes.order(id)) },
+                        onInboxCount = { inboxCount = it },
+                        onSessionExpired = { goToSessionExpired() }
                     )
-                    NavigationBarItem(
-                        selected = currentRoute == Routes.MORE,
-                        onClick = { navigateToTab(navController, Routes.MORE) },
-                        icon = { Icon(Icons.Filled.Menu, contentDescription = null) },
-                        label = { Text("Menu") }
+                }
+
+                composable(
+                    Routes.ORDERS,
+                    arguments = listOf(navArgument("status") { type = NavType.StringType; defaultValue = "" })
+                ) { e ->
+                    val status = e.arguments?.getString("status") ?: ""
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer {
+                            JsonLoaderViewModel(repo, "orders-list.php", "orders", if (status.isEmpty()) emptyMap() else mapOf("status" to status))
+                        }
+                    })
+                    OrdersListScreen(
+                        viewModel = vm,
+                        initialStatus = status,
+                        onOpenOrder = { id -> nav.navigate(Routes.order(id)) },
+                        onNewSale = { nav.navigate(Routes.newSale(true)) },
+                        onSessionExpired = { goToSessionExpired() }
+                    )
+                }
+
+                composable(Routes.ORDER) { e ->
+                    val id = e.arguments?.getString("id")?.toIntOrNull() ?: return@composable
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "orders-detail.php", null, mapOf("id" to id.toString())) }
+                    })
+                    OrderDetailScreen(
+                        viewModel = vm,
+                        orderId = id,
+                        onBack = { nav.popBackStack() },
+                        onOpenCourier = { oid -> nav.navigate(Routes.courier(oid)) },
+                        onOpenWeb = { p, t -> nav.navigate(Routes.web(p, t, true)) },
+                        onSessionExpired = { goToSessionExpired() }
+                    )
+                }
+
+                composable(Native.PRODUCTS) {
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "products-list.php", "products") }
+                    })
+                    ProductsListScreen(
+                        viewModel = vm,
+                        onOpenProduct = { id -> nav.navigate(Routes.productEdit(id)) },
+                        onAddProduct = { nav.navigate(Routes.productEdit(0)) },
+                        onSessionExpired = { goToSessionExpired() }
+                    )
+                }
+
+                composable(Routes.PRODUCT_EDIT) { e ->
+                    val id = e.arguments?.getString("id")?.toIntOrNull() ?: return@composable
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "product-full.php", null, mapOf("id" to id.toString())) }
+                    })
+                    ProductEditScreen(vm, id, onBack = { nav.popBackStack() }, onSessionExpired = { goToSessionExpired() })
+                }
+
+                composable(Native.COLLECTIONS) {
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "categories.php") }
+                    })
+                    CollectionsScreen(vm, onBack = null, onSessionExpired = { goToSessionExpired() })
+                }
+
+                composable(Native.STOCK) {
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "stock-report.php") }
+                    })
+                    StockReportScreen(vm, onBack = null, onSessionExpired = { goToSessionExpired() })
+                }
+
+                composable(
+                    Routes.NEW_SALE,
+                    arguments = listOf(navArgument("back") { type = NavType.StringType; defaultValue = "0" })
+                ) { e ->
+                    val back = e.arguments?.getString("back") == "1"
+                    val vm: NewSaleViewModel = viewModel(factory = viewModelFactory {
+                        initializer { NewSaleViewModel(repo) }
+                    })
+                    val picker: JsonLoaderViewModel = viewModel(key = "sale_picker", factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "catalog-variants.php", "products") }
+                    })
+                    NewSaleScreen(
+                        viewModel = vm,
+                        pickerViewModel = picker,
+                        onBack = if (back) ({ nav.popBackStack(); Unit }) else null,
+                        onOpenOrder = { oid ->
+                            nav.navigate(Routes.order(oid)) {
+                                popUpTo(Routes.NEW_SALE) { inclusive = true }
+                            }
+                        },
+                        onSessionExpired = { goToSessionExpired() }
+                    )
+                }
+
+                composable(Native.DELIVERIES) {
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "deliveries-list.php", "deliveries", mapOf("filter" to "all")) }
+                    })
+                    DeliveriesScreen(
+                        viewModel = vm,
+                        onBack = null,
+                        onOpenOrder = { oid -> nav.navigate(Routes.order(oid)) },
+                        onOpenCourier = { oid -> nav.navigate(Routes.courier(oid)) },
+                        onSessionExpired = { goToSessionExpired() }
+                    )
+                }
+
+                composable(Routes.COURIER) { e ->
+                    val id = e.arguments?.getString("id")?.toIntOrNull() ?: return@composable
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "courier-info.php", null, mapOf("id" to id.toString())) }
+                    })
+                    CourierScreen(vm, id, onBack = { nav.popBackStack() }, onSessionExpired = { goToSessionExpired() })
+                }
+
+                composable(Native.PREORDERS) {
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "preorders.php", "preorders") }
+                    })
+                    val picker: JsonLoaderViewModel = viewModel(key = "preorder_picker", factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "catalog-variants.php", "products") }
+                    })
+                    PreordersScreen(vm, picker, onBack = null, onSessionExpired = { goToSessionExpired() })
+                }
+
+                composable(Native.PROMOS) {
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "promo-codes.php") }
+                    })
+                    PromoCodesScreen(vm, onBack = null, onSessionExpired = { goToSessionExpired() })
+                }
+
+                composable(Native.OFFER) {
+                    val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
+                        initializer { JsonLoaderViewModel(repo, "offer.php") }
+                    })
+                    OfferScreen(vm, onBack = null, onSessionExpired = { goToSessionExpired() })
+                }
+
+                composable(
+                    Routes.WEB,
+                    arguments = listOf(
+                        navArgument("path") { type = NavType.StringType; defaultValue = "admin/index.php" },
+                        navArgument("title") { type = NavType.StringType; defaultValue = "Admin" },
+                        navArgument("back") { type = NavType.StringType; defaultValue = "0" }
+                    )
+                ) { e ->
+                    val path = e.arguments?.getString("path") ?: "admin/index.php"
+                    val title = e.arguments?.getString("title") ?: "Admin"
+                    val back = e.arguments?.getString("back") == "1"
+                    WebPageScreen(
+                        repo = repo,
+                        siteHost = siteHost,
+                        path = path,
+                        title = title,
+                        showBack = back,
+                        onExit = { if (!nav.popBackStack()) activity.finish() },
+                        onSessionExpired = { goToSessionExpired() }
                     )
                 }
             }
         }
-    ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = androidx.compose.ui.Modifier.padding(padding)
-        ) {
-            composable(Routes.LOGIN) {
-                val vm: LoginViewModel = viewModel(factory = viewModelFactory {
-                    initializer { LoginViewModel(repo, session) }
-                })
-                LoginScreen(viewModel = vm, onLoggedIn = {
-                    // First successful password sign-in on this device enables
-                    // the fingerprint unlock, if the phone supports it - this
-                    // is what "login gated by fingerprint" means after today.
-                    if (BiometricHelper.availability(activity) == BiometricHelper.Availability.AVAILABLE) {
-                        session.biometricEnabled = true
-                    }
-                    navController.navigate(Routes.DASHBOARD) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                })
-            }
-            composable(Routes.UNLOCK) {
-                UnlockScreen(
-                    onUnlocked = {
-                        navController.navigate(Routes.DASHBOARD) {
-                            popUpTo(Routes.UNLOCK) { inclusive = true }
-                        }
-                    },
-                    onUsePasswordInstead = {
-                        session.clear()
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }
-                )
-            }
-            composable(Routes.DASHBOARD) {
-                val vm: DashboardViewModel = viewModel(factory = viewModelFactory {
-                    initializer { DashboardViewModel(repo) }
-                })
-                DashboardScreen(viewModel = vm, onSessionExpired = { goToSessionExpired() })
-            }
-            composable(Routes.ORDERS) {
-                val vm: OrdersListViewModel = viewModel(factory = viewModelFactory {
-                    initializer { OrdersListViewModel(repo) }
-                })
-                OrdersListScreen(
-                    viewModel = vm,
-                    onOpenOrder = { id -> navController.navigate(Routes.orderDetail(id)) },
-                    onNewSale = { navController.navigate(Routes.NEW_SALE) },
-                    onSessionExpired = { goToSessionExpired() }
-                )
-            }
-            composable(Routes.PRODUCTS) {
-                val vm: ProductsListViewModel = viewModel(factory = viewModelFactory {
-                    initializer { ProductsListViewModel(repo) }
-                })
-                ProductsListScreen(
-                    viewModel = vm,
-                    onOpenProduct = { id -> navController.navigate(Routes.productEdit(id)) },
-                    onAddProduct = { navController.navigate(Routes.productEdit(0)) },
-                    onSessionExpired = { goToSessionExpired() }
-                )
-            }
-            composable(Routes.MORE) {
-                MoreScreen(
-                    onProducts = { navigateToTab(navController, Routes.PRODUCTS) },
-                    onCollections = { navController.navigate(Routes.COLLECTIONS) },
-                    onStock = { navController.navigate(Routes.STOCK) },
-                    onNewSale = { navController.navigate(Routes.NEW_SALE) },
-                    onOrders = { navigateToTab(navController, Routes.ORDERS) },
-                    onDeliveries = { navController.navigate(Routes.DELIVERIES) },
-                    onPreorders = { navController.navigate(Routes.PREORDERS) },
-                    onPromos = { navController.navigate(Routes.PROMOS) },
-                    onOffer = { navController.navigate(Routes.OFFER) },
-                    onSignOut = {
-                        scope.launch {
-                            repo.logout()
-                            session.clear()
-                            goToSessionExpired()
-                        }
-                    }
-                )
-            }
-            composable(Routes.STOCK) {
-                val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
-                    initializer { JsonLoaderViewModel(repo, "stock-report.php") }
-                })
-                StockReportScreen(vm, onBack = { navController.popBackStack() }, onSessionExpired = { goToSessionExpired() })
-            }
-            composable(Routes.COLLECTIONS) {
-                val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
-                    initializer { JsonLoaderViewModel(repo, "categories.php") }
-                })
-                CollectionsScreen(vm, onBack = { navController.popBackStack() }, onSessionExpired = { goToSessionExpired() })
-            }
-            composable(Routes.PRODUCT_EDIT) { entry ->
-                val id = entry.arguments?.getString("id")?.toIntOrNull() ?: return@composable
-                val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
-                    initializer { JsonLoaderViewModel(repo, "product-full.php", null, mapOf("id" to id.toString())) }
-                })
-                ProductEditScreen(vm, id, onBack = { navController.popBackStack() }, onSessionExpired = { goToSessionExpired() })
-            }
-            composable(Routes.NEW_SALE) {
-                val vm: NewSaleViewModel = viewModel(factory = viewModelFactory {
-                    initializer { NewSaleViewModel(repo) }
-                })
-                val picker: JsonLoaderViewModel = viewModel(key = "sale_picker", factory = viewModelFactory {
-                    initializer { JsonLoaderViewModel(repo, "catalog-variants.php", "products") }
-                })
-                NewSaleScreen(
-                    viewModel = vm,
-                    pickerViewModel = picker,
-                    onBack = { navController.popBackStack() },
-                    onOpenOrder = { oid ->
-                        navController.navigate(Routes.orderDetail(oid)) {
-                            popUpTo(Routes.NEW_SALE) { inclusive = true }
-                        }
-                    },
-                    onSessionExpired = { goToSessionExpired() }
-                )
-            }
-            composable(Routes.DELIVERIES) {
-                val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
-                    initializer { JsonLoaderViewModel(repo, "deliveries-list.php", "deliveries", mapOf("filter" to "all")) }
-                })
-                DeliveriesScreen(
-                    viewModel = vm,
-                    onBack = { navController.popBackStack() },
-                    onOpenOrder = { oid -> navController.navigate(Routes.orderDetail(oid)) },
-                    onOpenCourier = { oid -> navController.navigate(Routes.courier(oid)) },
-                    onSessionExpired = { goToSessionExpired() }
-                )
-            }
-            composable(Routes.COURIER) { entry ->
-                val id = entry.arguments?.getString("id")?.toIntOrNull() ?: return@composable
-                val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
-                    initializer { JsonLoaderViewModel(repo, "courier-info.php", null, mapOf("id" to id.toString())) }
-                })
-                CourierScreen(vm, id, onBack = { navController.popBackStack() }, onSessionExpired = { goToSessionExpired() })
-            }
-            composable(Routes.PREORDERS) {
-                val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
-                    initializer { JsonLoaderViewModel(repo, "preorders.php", "preorders") }
-                })
-                val picker: JsonLoaderViewModel = viewModel(key = "preorder_picker", factory = viewModelFactory {
-                    initializer { JsonLoaderViewModel(repo, "catalog-variants.php", "products") }
-                })
-                PreordersScreen(vm, picker, onBack = { navController.popBackStack() }, onSessionExpired = { goToSessionExpired() })
-            }
-            composable(Routes.PROMOS) {
-                val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
-                    initializer { JsonLoaderViewModel(repo, "promo-codes.php") }
-                })
-                PromoCodesScreen(vm, onBack = { navController.popBackStack() }, onSessionExpired = { goToSessionExpired() })
-            }
-            composable(Routes.OFFER) {
-                val vm: JsonLoaderViewModel = viewModel(factory = viewModelFactory {
-                    initializer { JsonLoaderViewModel(repo, "offer.php") }
-                })
-                OfferScreen(vm, onBack = { navController.popBackStack() }, onSessionExpired = { goToSessionExpired() })
-            }
-            composable(Routes.ORDER_DETAIL) { entry ->
-                val id = entry.arguments?.getString("id")?.toIntOrNull() ?: return@composable
-                val vm: OrderDetailViewModel = viewModel(factory = viewModelFactory {
-                    initializer { OrderDetailViewModel(repo, id) }
-                })
-                OrderDetailScreen(
-                    viewModel = vm,
-                    onBack = { navController.popBackStack() },
-                    onSessionExpired = { goToSessionExpired() },
-                    onOpenCourier = { oid -> navController.navigate(Routes.courier(oid)) }
-                )
-            }
-            composable(Routes.PRODUCT_DETAIL) { entry ->
-                val id = entry.arguments?.getString("id")?.toIntOrNull() ?: return@composable
-                val vm: ProductDetailViewModel = viewModel(factory = viewModelFactory {
-                    initializer { ProductDetailViewModel(repo, id) }
-                })
-                ProductDetailScreen(
-                    viewModel = vm,
-                    onBack = { navController.popBackStack() },
-                    onSessionExpired = { goToSessionExpired() }
-                )
-            }
-        }
-    }
-}
-
-private fun navigateToTab(navController: NavHostController, route: String) {
-    navController.navigate(route) {
-        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-        launchSingleTop = true
-        restoreState = true
     }
 }

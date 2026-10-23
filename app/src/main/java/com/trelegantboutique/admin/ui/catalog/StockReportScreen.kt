@@ -18,7 +18,7 @@ import com.trelegantboutique.admin.data.str
 import com.trelegantboutique.admin.ui.common.*
 
 @Composable
-fun StockReportScreen(viewModel: JsonLoaderViewModel, onBack: () -> Unit, onSessionExpired: () -> Unit) {
+fun StockReportScreen(viewModel: JsonLoaderViewModel, onBack: (() -> Unit)?, onSessionExpired: () -> Unit) {
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     var q by remember { mutableStateOf("") }

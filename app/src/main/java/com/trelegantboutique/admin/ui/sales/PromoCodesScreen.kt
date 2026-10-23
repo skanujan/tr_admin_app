@@ -24,7 +24,7 @@ import com.trelegantboutique.admin.data.str
 import com.trelegantboutique.admin.ui.common.*
 
 @Composable
-fun PromoCodesScreen(viewModel: JsonLoaderViewModel, onBack: () -> Unit, onSessionExpired: () -> Unit) {
+fun PromoCodesScreen(viewModel: JsonLoaderViewModel, onBack: (() -> Unit)?, onSessionExpired: () -> Unit) {
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     var adding by remember { mutableStateOf(false) }
