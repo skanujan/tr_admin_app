@@ -56,3 +56,38 @@ object ImageUtil {
         }
     }
 }
+
+/** Main colour of a photo on the phone (0xRRGGBB), or null if it cannot be read. */
+fun dominantColorOf(context: android.content.Context, uri: android.net.Uri): Int? {
+    return try {
+        val opts = android.graphics.BitmapFactory.Options()
+        opts.inSampleSize = 8
+        val bmp = context.contentResolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it, null, opts) } ?: return null
+        dominantColorOf(bmp)
+    } catch (e: Throwable) {
+        null
+    }
+}
+
+/** Main colour of a bitmap (0xRRGGBB): looks at a 44 x 44 copy, like the website. */
+fun dominantColorOf(bitmap: android.graphics.Bitmap): Int {
+    val src = if (bitmap.config == android.graphics.Bitmap.Config.HARDWARE) bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else bitmap
+    val small = android.graphics.Bitmap.createScaledBitmap(src, 44, 44, true)
+    val px = IntArray(44 * 44)
+    small.getPixels(px, 0, 44, 0, 0, 44, 44)
+    return ColorTools.dominant(px)
+}
+
+/** Main colour of a photo already on the website (by its address), using Coil to fetch it. */
+suspend fun dominantColorOfUrl(context: android.content.Context, url: String): Int? {
+    if (url.isBlank()) return null
+    return try {
+        val loader = coil.ImageLoader(context)
+        val req = coil.request.ImageRequest.Builder(context).data(url).allowHardware(false).build()
+        val result = loader.execute(req)
+        val d = result.drawable as? android.graphics.drawable.BitmapDrawable ?: return null
+        dominantColorOf(d.bitmap)
+    } catch (e: Throwable) {
+        null
+    }
+}

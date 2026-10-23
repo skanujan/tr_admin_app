@@ -23,8 +23,8 @@ android {
         applicationId = "com.trelegantboutique.admin"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
 
         // Changed in Settings > Server address inside the app itself, so this
         // default only matters the very first time the app is opened.

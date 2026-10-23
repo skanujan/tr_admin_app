@@ -70,8 +70,11 @@ class JsonLoaderViewModel(
         }
     }
 
+    /** The repository, for screens that send several requests in a row (batch photo uploads). */
+    fun repository(): ApiRepository = repo
+
     /** Reload quietly (no spinner over the whole screen) after a change. */
-    private fun reloadQuiet() {
+    fun reloadQuiet() {
         viewModelScope.launch {
             val q = HashMap(query)
             if (listKey != null) q["page"] = "1"
@@ -161,6 +164,10 @@ class JsonLoaderViewModel(
                 )
             }
         }
+    }
+
+    fun setBusy(on: Boolean) {
+        _state.value = _state.value.copy(busy = on)
     }
 
     fun showMessage(text: String) {
