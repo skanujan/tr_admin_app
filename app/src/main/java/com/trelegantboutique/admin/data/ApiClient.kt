@@ -57,8 +57,8 @@ class ApiClient(private val session: SessionStore) {
             .addInterceptor(authInterceptor)
             .addInterceptor(logging)
             .connectTimeout(20, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .writeTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(90, TimeUnit.SECONDS)
             .build()
 
         val gson = GsonBuilder().create()

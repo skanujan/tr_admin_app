@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +20,7 @@ import com.trelegantboutique.admin.ui.theme.DeepGreen
 fun ProductsListScreen(
     viewModel: ProductsListViewModel,
     onOpenProduct: (Int) -> Unit,
+    onAddProduct: () -> Unit = {},
     onSessionExpired: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
@@ -36,7 +38,14 @@ fun ProductsListScreen(
             }
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Products") }) }) { padding ->
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Products") }) },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAddProduct) {
+                Icon(androidx.compose.material.icons.Icons.Filled.Add, contentDescription = "Add product")
+            }
+        }
+    ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             OutlinedTextField(
                 value = state.query,
@@ -85,6 +94,7 @@ fun ProductsListScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProductRow(product: ProductSummary, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {

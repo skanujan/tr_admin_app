@@ -16,7 +16,12 @@ import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrderDetailScreen(viewModel: OrderDetailViewModel, onBack: () -> Unit, onSessionExpired: () -> Unit) {
+fun OrderDetailScreen(
+    viewModel: OrderDetailViewModel,
+    onBack: () -> Unit,
+    onSessionExpired: () -> Unit,
+    onOpenCourier: (Int) -> Unit = {}
+) {
     val state by viewModel.state.collectAsState()
     var showReturnDialog by remember { mutableStateOf(false) }
     var pendingStatus by remember { mutableStateOf<String?>(null) }
@@ -66,6 +71,11 @@ fun OrderDetailScreen(viewModel: OrderDetailViewModel, onBack: () -> Unit, onSes
                                         order.total?.let { Text("%.2f".format(it), fontWeight = FontWeight.Bold) }
                                     }
                                 }
+                            }
+                        }
+                        item {
+                            Button(onClick = { onOpenCourier(order.id) }, modifier = Modifier.fillMaxWidth()) {
+                                Text("Courier: book or track")
                             }
                         }
                         item {

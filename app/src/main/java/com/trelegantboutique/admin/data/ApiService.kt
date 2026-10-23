@@ -1,9 +1,17 @@
 package com.trelegantboutique.admin.data
 
+import com.google.gson.JsonObject
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
+import retrofit2.http.PartMap
+import retrofit2.http.QueryMap
+import retrofit2.http.Url
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -58,4 +66,21 @@ interface ApiService {
 
     @POST("push-register.php")
     suspend fun registerPush(@Body body: PushRegisterRequest): Response<OkResponse>
+
+    // ---- Generic endpoints used by the Catalog and Sales menus. The path is
+    // relative to the API base URL (for example "stock-report.php"). ----
+
+    @GET
+    suspend fun getJson(@Url path: String, @QueryMap query: Map<String, String>): Response<JsonObject>
+
+    @POST
+    suspend fun postJson(@Url path: String, @Body body: JsonObject): Response<JsonObject>
+
+    @Multipart
+    @POST
+    suspend fun postMultipart(
+        @Url path: String,
+        @PartMap fields: Map<String, @JvmSuppressWildcards RequestBody>,
+        @Part file: MultipartBody.Part?
+    ): Response<JsonObject>
 }

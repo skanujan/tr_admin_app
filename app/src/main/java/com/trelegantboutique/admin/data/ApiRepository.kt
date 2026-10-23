@@ -1,6 +1,11 @@
 package com.trelegantboutique.admin.data
 
 import com.google.gson.Gson
+import com.google.gson.JsonObject
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
 import java.io.IOException
 
@@ -52,6 +57,24 @@ class ApiRepository(private val client: ApiClient, private val session: SessionS
 
     suspend fun registerPush(token: String): ApiResult<OkResponse> =
         call { client.service.registerPush(PushRegisterRequest(token)) }
+
+    suspend fun getJson(path: String, query: Map<String, String> = emptyMap()): ApiResult<JsonObject> =
+        call { client.service.getJson(path, query) }
+
+    suspend fun postJson(path: String, body: JsonObject): ApiResult<JsonObject> =
+        call { client.service.postJson(path, body) }
+
+    /** Sends one photo (already shrunk to a JPEG) plus text fields as multipart/form-data. */
+    suspend fun uploadPhoto(path: String, fields: Map<String, String>, jpeg: ByteArray?): ApiResult<JsonObject> {
+        val textType = "text/plain".toMediaType()
+        val parts = HashMap<String, RequestBody>()
+        for ((k, v) in fields) parts[k] = v.toRequestBody(textType)
+        val filePart = if (jpeg != null) {
+            val body = jpeg.toRequestBody("image/jpeg".toMediaType())
+            MultipartBody.Part.createFormData("file", "photo.jpg", body)
+        } else null
+        return call { client.service.postMultipart(path, parts, filePart) }
+    }
 
     private suspend fun <T> call(block: suspend () -> Response<T>): ApiResult<T> {
         return try {
